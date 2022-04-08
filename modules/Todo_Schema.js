@@ -7,8 +7,12 @@ const TodoSchema = new Schema({
     },
     description: { type: String, required: true},
     complete: {type: Boolean, default: false},
-    timestamp: { type: String, default: Date.now()}
-}) 
+    //skapa en till field/varible då vet jag vilken användare skapade todo
+    //como referenciar otros schemas en mongosse
+    createby: {type: mongoose.Schema.Types.ObjectId, ref:'UserData'}
+    
+    
+}, {timestamps: true}); 
 
 const Todo = mongoose.model('Todo', TodoSchema)
 
