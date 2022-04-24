@@ -6,11 +6,13 @@ const mongoose= require('mongoose');
 const User = require('./modules/user.model');
 const jwt = require ('jsonwebtoken');
 const Todo = require('./modules/Todo_Schema')
-
+const multer = require("multer")
+const controller = require('./controllers/upload')
 const PORT = 3001;
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json()) 
+
 
 
 
@@ -87,20 +89,46 @@ app.get('/isUserAuth', verifyJWT, (req,res)=>{
     //res.json({message:"You are authenticated Congrats!"})
 })
 
-app.get('/todos',verifyJWT, async ( req, res) => {
+
+app.get('/todos/',verifyJWT, async ( req, res) => {
+   console.log(req.query)
+
+   const complete = req.query.completed === "true"
+    //todos?completed=true => req.query === {completed: "true"}
     //filtrera
     //1.1 vad i databasen vill jag filtrera
     //1.2 shemas kolla vilken användare skapades todos
     //1.4 createby:req.user.userId vi vill ha.....
 console.log(req.user)
 //2.1 lade.populate
-const todos = await Todo.find({createby:req.user.userId}).populate('createby').sort({createdAt: -1});
+const todos = await Todo.find({createby:req.user.userId, complete})
+.populate('createby')
+.sort({createdAt: -1})
+ .exec();
 res.json(todos);
 });
-app.post('/todo/new', verifyJWT, async (req, res) => {
+ 
+
+
+app.get('/detail/:id',verifyJWT, async ( req, res) => {
+
+    /*const { id } = req.params
+         Todo.findById(id)
+        .then(todos => res.json(todos)) */
+
+      const id = req.params.id
+     const entry = await Todo
+                    .findOne({ _id: id })
+                     res.json({ entry });
+ 
+});
+
+
+
+app.post('/todo/new', verifyJWT, async (req, res) => { 
     //1.3 sen sätta createby (from Todo_shemmas) och spara userId from min token
     //1.3 så userId sparas i new todos
-
+ console.log("body:", req.body)
     const todo = new Todo({
         task: req.body.task,
         description : req.body.description,
@@ -108,7 +136,15 @@ app.post('/todo/new', verifyJWT, async (req, res) => {
     });
     todo.save();
     res.json(todo);
+    
 }) 
+
+app.put('/todo/update/:todoId',verifyJWT, async (req, res) => {
+    const todoId = req.params.todoId
+    const entry = await Todo.findByIdAndUpdate({_id: todoId})
+    res.json({entry});
+   
+})
 
 app.delete('/todo/delete/:id', async (req,res)=>{
     const result = await Todo.findByIdAndDelete(req.params.id);
@@ -116,6 +152,13 @@ app.delete('/todo/delete/:id', async (req,res)=>{
     res.json(result);
 
 });
+/*
+app.put('/todo/update/:id', async (req,res)=>{
+    const result = await Todo.findByIdAndUpdate(req.params.id);
+
+    res.json(result);
+
+});*/
 
 app.get('/todo/complete/:id', async ( req, res) =>{
     const todo =  await Todo.findById(req.params.id);
@@ -123,14 +166,40 @@ app.get('/todo/complete/:id', async ( req, res) =>{
     todo.complete = !todo.complete;
 
     todo.save();
-
+ 
     res.json(todo);
 })
+
+    //---------------------------- multer -------------------
+
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, "uploads")
+      },
+      filename: (req, file, cb) => {
+        cb(null, Date.now() + "-" + file.originalname)
+      }
+    })
+
+  const upload = multer({storage: storage}).array("file");
+
+  app.post("/upload", (req, res) => {
     
-
-
-
+    console.log(req.files)       
     
+    upload(req, res, (err) => {
+      if (err) {
+        return res.status(500).json(err)
+      }
+      return res.status(200).send(req.files)
+    }) 
+  })
+/*
+  app.get("/", (_req, res) => {
+    res.sendFile(path.join(__dirname, "upload.html"))
+  });*/
+
+     
 app.listen(PORT, () => {
   console.log(`Started Express server on port ${PORT}`);
 });

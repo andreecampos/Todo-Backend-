@@ -3,13 +3,19 @@ const Schema = mongoose.Schema;
 
 const TodoSchema = new Schema({
     task: {
-        type: String, required: true
+        type: String
     },
-    description: { type: String, required: true},
-    complete: {type: Boolean, default: false},
+    description: { type: String, default: "" },
+    file: {type: String, default: ""},
+    complete: {type: Boolean, require: true},
     //skapa en till field/varible då vet jag vilken användare skapade todo
     //como referenciar otros schemas en mongosse
-    createby: {type: mongoose.Schema.Types.ObjectId, ref:'UserData'}
+    createby: {type: mongoose.Schema.Types.ObjectId, ref:'UserData'},
+    //createdAt: {
+        //type: String,
+        //immutable: true, 
+        //default: () => moment().format("YYYY-MM-DD, HH:mm:ss"),
+    //}
     
     
 }, {timestamps: true}); 
